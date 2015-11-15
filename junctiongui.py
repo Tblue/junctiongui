@@ -2,24 +2,23 @@
 
 import os
 import queue
-import re
 import shutil
 import subprocess
 import threading
 import tkinter.filedialog
 import tkinter.messagebox
-
 from functools import partial
 from tkinter import *
 from tkinter.ttk import *
 
 
-APP_NAME  = "JunctionGUI"
+APP_NAME = "JunctionGUI"
 COPYRIGHT = "© 2015 by Tblue"
 
 
 def dirIsEmpty(path):
     return len(os.listdir(path)) == 0
+
 
 def escapePathForCmd(path):
     return re.sub(r"([^%!]+)", r'"\1"', path).replace("%", "^%").replace("!", "^!")
@@ -122,11 +121,12 @@ class Application(Frame):
 
         # Explanation label
         self.labelAppDesc = Message(self, aspect=1000, text="Clicking the button below will move the contents of the "
-            "first directory chosen above to the second directory and create a \"junction point\" (think shortcut for "
-            "directories) in place of the first directory, pointing to the second directory."
-        )
+                                                            "first directory chosen above to the second directory and "
+                                                            "create a \"junction point\" (think shortcut for "
+                                                            "directories) in place of the first directory, "
+                                                            "pointing to the second directory."
+                                    )
         self.labelAppDesc.grid(columnspan=3)
-
 
         # This is the "Go!" area, containing the main action widgets
         frameGo = Frame(self)
@@ -172,7 +172,7 @@ class Application(Frame):
         self.progressMove["mode"] = "determinate"
 
     def onQuit(self):
-        #print("Quitting...")
+        # print("Quitting...")
 
         self.worker.stopThread.set()
         self.worker.join()
@@ -222,7 +222,8 @@ class Application(Frame):
                 return False
             elif os.path.exists(destPath):
                 if not os.path.isdir(destPath):
-                    tkinter.messagebox.showerror("Error", "The destination directory does not exist (or is not a directory).")
+                    tkinter.messagebox.showerror("Error",
+                                                 "The destination directory does not exist (or is not a directory).")
                     return False
                 elif os.path.samefile(linkName, destPath):
                     tkinter.messagebox.showerror("Error", "Please select two different directories.")
