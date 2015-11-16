@@ -93,7 +93,7 @@ class Worker(threading.Thread):
 
 class Application(Frame):
     def __init__(self, master=None):
-        Frame.__init__(self, master)
+        super().__init__(master)
 
         self.linkName = StringVar()
         self.destName = StringVar()
