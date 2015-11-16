@@ -42,190 +42,196 @@ APP_NAME = "JunctionGUI"
 COPYRIGHT = "© 2015 by Tblue"
 
 
-def dirIsEmpty(path):
+def dir_is_empty(path):
     return len(os.listdir(path)) == 0
 
 
-def escapePathForCmd(path):
+def escape_path_for_cmd(path):
     return re.sub(r"([^%!]+)", r'"\1"', path).replace("%", "^%").replace("!", "^!")
 
 
 class Worker(threading.Thread):
-    def __init__(self, taskQueue, resultQueue):
+    def __init__(self, task_queue, result_queue):
         super().__init__()
 
-        self._taskQueue = taskQueue
-        self._resultQueue = resultQueue
-        self.stopThread = threading.Event()
+        self._task_queue = task_queue
+        self._result_queue = result_queue
+        self.stop_thread = threading.Event()
 
     def run(self):
-        while not self.stopThread.is_set():
+        while not self.stop_thread.is_set():
             # Wait for a task
             try:
-                linkName, destPath = self._taskQueue.get(timeout=0.1)
+                link_name, dest_path = self._task_queue.get(timeout=0.1)
             except queue.Empty:
                 continue
 
             try:
                 # If the dest path exists, remove it
-                if os.path.exists(destPath):
-                    os.rmdir(destPath)
+                if os.path.exists(dest_path):
+                    os.rmdir(dest_path)
 
                 # Now move the directory contents
-                shutil.move(linkName, destPath)
+                shutil.move(link_name, dest_path)
 
                 # Finally, create the junction
                 subprocess.check_call(
                     "mklink /j %s %s" % (
-                        escapePathForCmd(linkName),
-                        escapePathForCmd(destPath)
+                        escape_path_for_cmd(link_name),
+                        escape_path_for_cmd(dest_path)
                     ),
                     shell=True
                 )
             except Exception as e:
                 # Error
-                self._resultQueue.put((e, linkName, destPath))
+                self._result_queue.put((e, link_name, dest_path))
                 continue
 
             # Success
-            self._resultQueue.put((True, linkName, destPath))
+            self._result_queue.put((True, link_name, dest_path))
 
 
 class Application(Frame):
     def __init__(self, master=None):
         super().__init__(master)
 
-        self.linkName = StringVar()
-        self.destName = StringVar()
+        self.link_name = StringVar()
+        self.dest_name = StringVar()
 
-        self.taskQueue = queue.Queue()
-        self.resultQueue = queue.Queue()
+        self.task_queue = queue.Queue()
+        self.result_queue = queue.Queue()
 
-        self.worker = Worker(self.taskQueue, self.resultQueue)
+        self.worker = Worker(self.task_queue, self.result_queue)
         self.worker.start()
 
-        self._root().protocol("WM_DELETE_WINDOW", self.onQuit)
+        self._root().protocol("WM_DELETE_WINDOW", self.on_quit)
         self._root().title("%s - %s" % (APP_NAME, COPYRIGHT))
         self._root().resizable(False, False)
 
-        # These get set by createWidget() below.
+        # These get set by create_widgets() below.
         # Initialized here for clarity and to make IntelliJ shut up about
         # "instance attribute defined outside __init__".
-        self.buttonLinkName = None
-        self.buttonDestName = None
-        self.buttonGo = None
-        self.progressMove = None
+        self.button_link_name = None
+        self.button_dest_name = None
+        self.button_go = None
+        self.progress_move = None
 
         self.pack()
-        self.createWidgets()
+        self.create_widgets()
 
-    def createWidgets(self):
+    def create_widgets(self):
         # Link name label
-        labelLinkName = Label(self, text="Directory to move:")
-        labelLinkName.grid(sticky="W")
+        label_link_name = Label(self, text="Directory to move:")
+        label_link_name.grid(sticky="W")
 
         # Destination directory label
-        labelDestName = Label(self, text="Move contents of this directory to:")
-        labelDestName.grid(sticky="W")
+        label_dest_name = Label(self, text="Move contents of this directory to:")
+        label_dest_name.grid(sticky="W")
 
         # Link name input
-        inputLinkName = Entry(self, state="readonly", width=42, textvariable=self.linkName)
-        inputLinkName.grid(column=1, row=0)
+        input_link_name = Entry(self, state="readonly", width=42, textvariable=self.link_name)
+        input_link_name.grid(column=1, row=0)
 
         # Button: Choose link name (a directory)
-        self.buttonLinkName = Button(
+        self.button_link_name = Button(
             self,
             text="Choose...",
-            command=partial(self.chooseDir, self.linkName, "Please choose the directory to move:", True)
+            command=partial(self.choose_dir, self.link_name, "Please choose the directory to move:", True)
         )
-        self.buttonLinkName.grid(column=2, row=0)
-        self.buttonLinkName.focus_set()
+        self.button_link_name.grid(column=2, row=0)
+        self.button_link_name.focus_set()
 
         # Destination directory input
-        inputDestName = Entry(self, state="readonly", width=42, textvariable=self.destName)
-        inputDestName.grid(column=1, row=1)
+        input_dest_name = Entry(self, state="readonly", width=42, textvariable=self.dest_name)
+        input_dest_name.grid(column=1, row=1)
 
         # Button: Choose destination directory
-        self.buttonDestName = Button(
+        self.button_dest_name = Button(
             self,
             text="Choose...",
-            command=partial(self.chooseDir, self.destName, "Please choose the target directory:", False)
+            command=partial(self.choose_dir, self.dest_name, "Please choose the target directory:", False)
         )
-        self.buttonDestName.grid(column=2, row=1)
+        self.button_dest_name.grid(column=2, row=1)
 
         # Explanation label
-        labelAppDesc = Message(self, aspect=1000, text="Clicking the button below will move the contents of the "
-                                                       "first directory chosen above to the second directory and "
-                                                       "create a \"junction point\" (think shortcut for "
-                                                       "directories) in place of the first directory, "
-                                                       "pointing to the second directory."
-                               )
-        labelAppDesc.grid(columnspan=3)
+        label_app_desc = Message(
+            self,
+            aspect=1000,
+            text="Clicking the button below will move the contents of the first directory chosen above to the second "
+                 "directory and create a \"junction point\" (think shortcut for directories) in place of the first "
+                 "directory, pointing to the second directory."
+        )
+        label_app_desc.grid(columnspan=3)
 
         # This is the "Go!" area, containing the main action widgets
-        frameGo = Frame(self)
-        frameGo.grid(columnspan=3)
+        frame_go = Frame(self)
+        frame_go.grid(columnspan=3)
 
         # "Go!" button
-        self.buttonGo = Button(frameGo, text="Move directory contents!", state=DISABLED, command=self.goButtonClicked)
-        self.buttonGo.pack()
+        self.button_go = Button(
+            frame_go,
+            text="Move directory contents!",
+            state=DISABLED,
+            command=self.go_button_clicked
+        )
+        self.button_go.pack()
 
         # Progress bar
-        self.progressMove = Progressbar(frameGo)
-        self.progressMove.pack(fill=X)
+        self.progress_move = Progressbar(frame_go)
+        self.progress_move.pack(fill=X)
 
-    def chooseDir(self, textvariable, title, mustexist):
-        chosenDir = tkinter.filedialog.askdirectory(
+    def choose_dir(self, textvariable, title, mustexist):
+        chosen_dir = tkinter.filedialog.askdirectory(
             initialdir=textvariable.get(),
             parent=self,
             title=title,
             mustexist=mustexist
         )
 
-        if chosenDir:
-            textvariable.set(chosenDir)
+        if chosen_dir:
+            textvariable.set(chosen_dir)
 
-        self.maybeEnableGoButton()
+        self.maybe_enable_go_button()
 
-    def maybeEnableGoButton(self):
-        if self.linkName.get() and self.destName.get():
-            self.buttonGo["state"] = ACTIVE
+    def maybe_enable_go_button(self):
+        if self.link_name.get() and self.dest_name.get():
+            self.button_go["state"] = ACTIVE
 
-    def setButtonsState(self, state):
-        for but in [self.buttonLinkName, self.buttonDestName, self.buttonGo]:
+    def set_buttons_state(self, state):
+        for but in [self.button_link_name, self.button_dest_name, self.button_go]:
             but["state"] = state
 
-    def startProgress(self):
-        self.setButtonsState(DISABLED)
-        self.progressMove["mode"] = "indeterminate"
-        self.progressMove.start(20)
+    def start_progress(self):
+        self.set_buttons_state(DISABLED)
+        self.progress_move["mode"] = "indeterminate"
+        self.progress_move.start(20)
 
-    def stopProgress(self):
-        self.setButtonsState(ACTIVE)
-        self.progressMove.stop()
-        self.progressMove["mode"] = "determinate"
+    def stop_progress(self):
+        self.set_buttons_state(ACTIVE)
+        self.progress_move.stop()
+        self.progress_move["mode"] = "determinate"
 
-    def onQuit(self):
+    def on_quit(self):
         # print("Quitting...")
 
-        self.worker.stopThread.set()
+        self.worker.stop_thread.set()
         self.worker.join()
 
         self._root().destroy()
 
-    def scheduleCompletionCheck(self):
-        self._root().after(100, self.checkForCompletion)
+    def schedule_completion_check(self):
+        self._root().after(100, self.check_for_completion)
 
-    def checkForCompletion(self):
+    def check_for_completion(self):
         try:
-            exception, linkName, destPath = self.resultQueue.get_nowait()
+            exception, link_name, dest_path = self.result_queue.get_nowait()
         except queue.Empty:
             # Reschedule this completion check.
-            self.scheduleCompletionCheck()
+            self.schedule_completion_check()
             return
 
         # Either we got an error or everything went well -- in both cases, the operation has ended.
-        self.stopProgress()
+        self.stop_progress()
 
         if exception is True:
             # Success
@@ -240,29 +246,29 @@ class Application(Frame):
                 "Sorry, the following error occurred:\n\n" + str(exception) + "\n\nPlease try again."
             )
 
-    def goButtonClicked(self):
-        self.startProgress()
-        if not self.checkAndQueueTask():
-            self.stopProgress()
+    def go_button_clicked(self):
+        self.start_progress()
+        if not self.check_and_queue_task():
+            self.stop_progress()
 
-    def checkAndQueueTask(self):
-        linkName = self.linkName.get()
-        destPath = self.destName.get()
+    def check_and_queue_task(self):
+        link_name = self.link_name.get()
+        dest_path = self.dest_name.get()
 
         # Sanity checks
         try:
-            if not os.path.isdir(linkName):
+            if not os.path.isdir(link_name):
                 tkinter.messagebox.showerror("Error", "The directory to move does not exist (or is not a directory).")
                 return False
-            elif os.path.exists(destPath):
-                if not os.path.isdir(destPath):
+            elif os.path.exists(dest_path):
+                if not os.path.isdir(dest_path):
                     tkinter.messagebox.showerror("Error",
                                                  "The destination directory does not exist (or is not a directory).")
                     return False
-                elif os.path.samefile(linkName, destPath):
+                elif os.path.samefile(link_name, dest_path):
                     tkinter.messagebox.showerror("Error", "Please select two different directories.")
                     return False
-                elif not dirIsEmpty(destPath):
+                elif not dir_is_empty(dest_path):
                     tkinter.messagebox.showerror("Error", "The destination directory is not empty!")
                     return False
         except OSError as e:
@@ -273,10 +279,10 @@ class Application(Frame):
             return False
 
         # Now, make our worker thread move the directory and create the junction.
-        self.taskQueue.put((linkName, destPath))
+        self.task_queue.put((link_name, dest_path))
 
         # Wait for completion.
-        self.scheduleCompletionCheck()
+        self.schedule_completion_check()
         return True
 
 
