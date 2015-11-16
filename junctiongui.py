@@ -108,21 +108,29 @@ class Application(Frame):
         self._root().title("%s - %s" % (APP_NAME, COPYRIGHT))
         self._root().resizable(False, False)
 
+        # These get set by createWidget() below.
+        # Initialized here for clarity and to make IntelliJ shut up about
+        # "instance attribute defined outside __init__".
+        self.buttonLinkName = None
+        self.buttonDestName = None
+        self.buttonGo = None
+        self.progressMove = None
+
         self.pack()
         self.createWidgets()
 
     def createWidgets(self):
         # Link name label
-        self.labelLinkName = Label(self, text="Directory to move:")
-        self.labelLinkName.grid(sticky="W")
+        labelLinkName = Label(self, text="Directory to move:")
+        labelLinkName.grid(sticky="W")
 
         # Destination directory label
-        self.labelDestName = Label(self, text="Move contents of this directory to:")
-        self.labelDestName.grid(sticky="W")
+        labelDestName = Label(self, text="Move contents of this directory to:")
+        labelDestName.grid(sticky="W")
 
         # Link name input
-        self.inputLinkName = Entry(self, state="readonly", width=42, textvariable=self.linkName)
-        self.inputLinkName.grid(column=1, row=0)
+        inputLinkName = Entry(self, state="readonly", width=42, textvariable=self.linkName)
+        inputLinkName.grid(column=1, row=0)
 
         # Button: Choose link name (a directory)
         self.buttonLinkName = Button(
@@ -134,8 +142,8 @@ class Application(Frame):
         self.buttonLinkName.focus_set()
 
         # Destination directory input
-        self.inputDestName = Entry(self, state="readonly", width=42, textvariable=self.destName)
-        self.inputDestName.grid(column=1, row=1)
+        inputDestName = Entry(self, state="readonly", width=42, textvariable=self.destName)
+        inputDestName.grid(column=1, row=1)
 
         # Button: Choose destination directory
         self.buttonDestName = Button(
@@ -146,13 +154,13 @@ class Application(Frame):
         self.buttonDestName.grid(column=2, row=1)
 
         # Explanation label
-        self.labelAppDesc = Message(self, aspect=1000, text="Clicking the button below will move the contents of the "
-                                                            "first directory chosen above to the second directory and "
-                                                            "create a \"junction point\" (think shortcut for "
-                                                            "directories) in place of the first directory, "
-                                                            "pointing to the second directory."
-                                    )
-        self.labelAppDesc.grid(columnspan=3)
+        labelAppDesc = Message(self, aspect=1000, text="Clicking the button below will move the contents of the "
+                                                       "first directory chosen above to the second directory and "
+                                                       "create a \"junction point\" (think shortcut for "
+                                                       "directories) in place of the first directory, "
+                                                       "pointing to the second directory."
+                               )
+        labelAppDesc.grid(columnspan=3)
 
         # This is the "Go!" area, containing the main action widgets
         frameGo = Frame(self)
